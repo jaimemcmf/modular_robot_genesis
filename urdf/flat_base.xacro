@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:macro name="flat_base" params="name='flat_base'">
+
+        <xacro:property name="name" value="flat_base" />
+        <xacro:property name="mass" value="0.65" /> <!-- kg -->
+        <xacro:property name="size_x" value="0.1494" />   <!-- meters -->
+        <xacro:property name="size_y" value="0.1494" />   <!-- meters -->
+        <xacro:property name="size_z" value="0.055023" /> <!-- meters -->
+
+        <!-- Inertia for a solid box -->
+        <xacro:property name="ixx" value="${(1.0/12.0) * mass * (size_y*size_y + size_z*size_z)}" />
+        <xacro:property name="iyy" value="${(1.0/12.0) * mass * (size_x*size_x + size_z*size_z)}" />
+        <xacro:property name="izz" value="${(1.0/12.0) * mass * (size_x*size_x + size_y*size_y)}" />
+
+        <link name="${name}_link">
+            <inertial>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <mass value="${mass}" />
+                <inertia
+                    ixx="${ixx}" ixy="0.0" ixz="0.0"
+                    iyy="${iyy}" iyz="0.0"
+                    izz="${izz}" />
+            </inertial>
+
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <box size="0.0747 0.0747 0.0275115" />
+                </geometry>
+                <material name="grey">
+                    <color rgba="0.7 0.7 0.7 1.0" />
+                </material>
+            </visual>
+
+
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <box size="${size_x} ${size_y} ${size_z}" />
+                </geometry>
+            </collision>
+        </link>
+
+        <!-- =================== -->
+        <!-- Face frames (for modular connections) -->
+        <!-- =================== -->
+        <!-- Positions and normals from originFaceVector and normalFaceVector -->
+
+
+    </xacro:macro>
+</robot>
