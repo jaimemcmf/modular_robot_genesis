@@ -7,7 +7,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <box size="0.0305 0.0275 0.0385" />
+          <box size="0.0385 0.0305 0.0275" />
         </geometry>
         <material name="orange">
           <color rgba="1 0.4 0 1" />
@@ -28,4 +28,7 @@
       </inertial>
     </link>
   </xacro:macro>
+
+  <xacro:emerge_module name="emerge_module" />
+  
 </robot>

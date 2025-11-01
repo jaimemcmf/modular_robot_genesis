@@ -4,49 +4,6 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="modular_robot">
-  <link name="emerge_plus_link">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.0305 0.0275 0.0385"/>
-      </geometry>
-      <material name="orange">
-        <color rgba="1 0.4 0 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.061 0.055 0.077"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.06"/>
-      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00007"/>
-    </inertial>
-  </link>
-  <link name="emerge_minus_link">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.0305 0.0275 0.0385"/>
-      </geometry>
-      <material name="orange">
-        <color rgba="1 0.4 0 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.061 0.055 0.077"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.06"/>
-      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00007"/>
-    </inertial>
-  </link>
-  <!-- meters -->
   <link name="flat_base_link">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -69,20 +26,118 @@
       </geometry>
     </collision>
   </link>
-  <!-- =================== -->
-  <!-- Face frames (for modular connections) -->
-  <!-- =================== -->
-  <!-- Positions and normals from originFaceVector and normalFaceVector -->
+  <link name="emerge_plus_connector_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.0385 0.0305 0.0275"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="1 0.4 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.061 0.055 0.077"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.06"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00007"/>
+    </inertial>
+  </link>
+  <link name="emerge_plus_motor_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.048125 0.038125 0.034375"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="1 0.4 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.061 0.055 0.077"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.06"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00007"/>
+    </inertial>
+  </link>
+  <joint name="emerge_plus_joint" type="revolute">
+    <parent link="emerge_plus_connector_link"/>
+    <child link="emerge_plus_motor_link"/>
+    <origin rpy="0 0 0" xyz="0.03 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0.5" lower="-1.57" upper="1.57" velocity="2.0"/>
+  </joint>
+  <link name="emerge_minus_connector_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.0385 0.0305 0.0275"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="1 0.4 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.061 0.055 0.077"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.06"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00007"/>
+    </inertial>
+  </link>
+  <link name="emerge_minus_motor_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.048125 0.038125 0.034375"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="1 0.4 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.061 0.055 0.077"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.06"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00007"/>
+    </inertial>
+  </link>
+  <joint name="emerge_minus_joint" type="revolute">
+    <parent link="emerge_minus_connector_link"/>
+    <child link="emerge_minus_motor_link"/>
+    <origin rpy="0 0 0" xyz="0.03 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0.5" lower="-1.57" upper="1.57" velocity="2.0"/>
+  </joint>
   <!-- +X side -->
   <joint name="joint_x_plus" type="fixed">
     <parent link="flat_base_link"/>
-    <child link="emerge_plus_link"/>
+    <child link="emerge_plus_connector_link"/>
     <origin rpy="0 0 0" xyz="0.0526 0 0"/>
   </joint>
   <!-- -X side -->
   <joint name="joint_x_minus" type="fixed">
     <parent link="flat_base_link"/>
-    <child link="emerge_minus_link"/>
+    <child link="emerge_minus_connector_link"/>
     <origin rpy="0 0 3.141592653589793" xyz="-0.0526 0 0"/>
   </joint>
 </robot>

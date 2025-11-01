@@ -2,31 +2,30 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="modular_robot">
 
   <!-- Include submodules -->
-  <xacro:include filename="emerge_module.xacro" />
-  <xacro:include filename="flat_base.xacro" />
+  <xacro:include filename="emerge_module2.xacro"/>
+  <xacro:include filename="flat_base.xacro"/>
 
-  <!-- Instantiate modules -->
-  <xacro:emerge_module name="emerge_plus" />
-  <xacro:emerge_module name="emerge_minus" />
-  <xacro:flat_base name="flat_base" />
+  <!-- Instantiate base and modules -->
+  <xacro:flat_base name="flat_base"/>
+  <xacro:emerge_module name="emerge_plus"/>
+  <xacro:emerge_module name="emerge_minus"/>
 
   <!-- Position properties -->
-  <!-- Using visual box dimensions to make surfaces touch -->
-  <xacro:property name="flat_half_x" value="${0.0747 / 2.0}" />
-  <xacro:property name="emerge_half_x" value="${0.0305 / 2.0}" />
-  <xacro:property name="joint_offset_x" value="${flat_half_x + emerge_half_x}" />
+  <xacro:property name="flat_half_x" value="${0.0747 / 2.0}"/>
+  <xacro:property name="emerge_half_x" value="${0.0305 / 2.0}"/>
+  <xacro:property name="joint_offset_x" value="${flat_half_x + emerge_half_x}"/>
 
   <!-- +X side -->
   <joint name="joint_x_plus" type="fixed">
     <parent link="flat_base_link"/>
-    <child link="emerge_plus_link"/>
+    <child link="emerge_plus_connector_link"/>
     <origin xyz="${joint_offset_x} 0 0" rpy="0 0 0"/>
   </joint>
 
   <!-- -X side -->
   <joint name="joint_x_minus" type="fixed">
     <parent link="flat_base_link"/>
-    <child link="emerge_minus_link"/>
+    <child link="emerge_minus_connector_link"/>
     <origin xyz="${-1 * joint_offset_x} 0 0" rpy="0 0 ${pi}"/>
   </joint>
 
