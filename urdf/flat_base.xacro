@@ -38,6 +38,5 @@
       </collision>
     </link>
   </xacro:macro>
-  <xacro:flat_base name="flat_base"/>
 
 </robot>

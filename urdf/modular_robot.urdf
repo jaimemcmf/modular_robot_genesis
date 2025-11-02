@@ -74,8 +74,8 @@
     <parent link="emerge_plus_connector_link"/>
     <child link="emerge_plus_motor_link"/>
     <origin rpy="0 0 0" xyz="0.03 0 0"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="0.5" lower="-1.57" upper="1.57" velocity="2.0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0.5" lower="-0.12" upper="0.12" velocity="2.0"/>
   </joint>
   <link name="emerge_minus_connector_link">
     <visual>
@@ -125,8 +125,8 @@
     <parent link="emerge_minus_connector_link"/>
     <child link="emerge_minus_motor_link"/>
     <origin rpy="0 0 0" xyz="0.03 0 0"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="0.5" lower="-1.57" upper="1.57" velocity="2.0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0.5" lower="-0.12" upper="0.12" velocity="2.0"/>
   </joint>
   <!-- +X side -->
   <joint name="joint_x_plus" type="fixed">
