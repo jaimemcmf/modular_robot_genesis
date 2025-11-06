@@ -4,6 +4,7 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="modular_robot">
+  <!-- <xacro:emerge_module name="emerge_plus"/> -->
   <link name="flat_base_link">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -39,7 +40,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.061 0.055 0.077"/>
+        <box size="0.0385 0.0305 0.0275"/>
       </geometry>
     </collision>
     <inertial>
@@ -61,7 +62,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.061 0.055 0.077"/>
+        <box size="0.048125 0.038125 0.034375"/>
       </geometry>
     </collision>
     <inertial>
@@ -75,7 +76,8 @@
     <child link="emerge_plus_motor_link"/>
     <origin rpy="0 0 0" xyz="0.03 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="0.5" lower="-0.12" upper="0.12" velocity="2.0"/>
+    <!-- <limit effort="0.5" velocity="2.0" lower="-0.12" upper="0.12" /> -->
+    <limit effort="0.5" lower="-0.6" upper="0.6" velocity="2.0"/>
   </joint>
   <link name="emerge_minus_connector_link">
     <visual>
@@ -90,7 +92,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.061 0.055 0.077"/>
+        <box size="0.0385 0.0305 0.0275"/>
       </geometry>
     </collision>
     <inertial>
@@ -112,7 +114,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.061 0.055 0.077"/>
+        <box size="0.048125 0.038125 0.034375"/>
       </geometry>
     </collision>
     <inertial>
@@ -126,18 +128,23 @@
     <child link="emerge_minus_motor_link"/>
     <origin rpy="0 0 0" xyz="0.03 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="0.5" lower="-0.12" upper="0.12" velocity="2.0"/>
+    <!-- <limit effort="0.5" velocity="2.0" lower="-0.12" upper="0.12" /> -->
+    <limit effort="0.5" lower="-0.6" upper="0.6" velocity="2.0"/>
   </joint>
   <!-- +X side -->
-  <joint name="joint_x_plus" type="fixed">
+  <joint name="joint_x_plus" type="revolute">
     <parent link="flat_base_link"/>
     <child link="emerge_plus_connector_link"/>
     <origin rpy="0 0 0" xyz="0.0526 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10" lower="-1.57" upper="1.57" velocity="3"/>
   </joint>
   <!-- -X side -->
-  <joint name="joint_x_minus" type="fixed">
+  <joint name="joint_x_minus" type="revolute">
     <parent link="flat_base_link"/>
     <child link="emerge_minus_connector_link"/>
     <origin rpy="0 0 3.141592653589793" xyz="-0.0526 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10" lower="-1.57" upper="1.57" velocity="3"/>
   </joint>
 </robot>

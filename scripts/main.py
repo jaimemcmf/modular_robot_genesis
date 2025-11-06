@@ -16,29 +16,43 @@ def simulate():
 
     gs.init(backend=gs.cpu)
 
-    scene = gs.Scene(show_viewer=True)
+    scene = gs.Scene(
+        viewer_options = gs.options.ViewerOptions(
+            camera_pos    = (0, -3.5, 2.5),
+            camera_lookat = (0.0, 0.0, 0.5),
+            camera_fov    = 30,
+            res           = (960, 640),
+            max_FPS       = 60,
+        ),
+        sim_options = gs.options.SimOptions(
+            dt = 0.01,
+        ),
+        show_viewer = True,
+    )
     scene.add_entity(gs.morphs.Plane())
     robot = scene.add_entity(gs.morphs.URDF(file=str(urdf_file)))
     scene.build()
 
     jnt_names = ["emerge_plus_joint", "emerge_minus_joint"]
-    dofs_idx = [robot.get_joint(name).dof_idx_local for name in jnt_names]
+    dofs_idx = [robot.get_joint(name).dof_idx for name in jnt_names]
 
     robot.set_dofs_kp(np.array([80.0, 80.0]), dofs_idx)
-    robot.set_dofs_kv(np.array([8.0, 8.0]), dofs_idx)
-    robot.set_dofs_force_range(np.array([-50.0, -50.0]), np.array([50.0, 50.0]), dofs_idx)
+    robot.set_dofs_kv(np.array([2.0, 2.0]), dofs_idx)
+    robot.set_dofs_force_range(np.array([-3.0, -3.0]), np.array([3.0, 3.0]), dofs_idx)
+
 
     # initial position target
     t = 0.0
     dt = 0.01
-    frequency = 5.0  # 5 Hz oscillation
+    frequency = 1.0  # 20 Hz oscillation
     amplitude = 0.5  # radians
 
     for step in range(1000):
         t += dt
         # Both joints have the same sinusoidal target
         target_angle = amplitude * np.sin(2 * np.pi * frequency * t)
-        targets = np.array([target_angle, target_angle])  # Second joint remains at 0.0
+        # Second joint remains at 0.0
+        targets = np.array([target_angle, target_angle])
 
         # Send target positions to both joints
         robot.control_dofs_position(targets, dofs_idx)
