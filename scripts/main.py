@@ -1,7 +1,5 @@
 import subprocess
 from pathlib import Path
-import time
-import numpy as np
 from urdfpy import URDF
 
 project_root = Path(__file__).resolve().parents[1]
@@ -11,7 +9,7 @@ urdf_file = urdf_dir / "modular_robot.urdf"
 
 
 def simulate():
-    import genesis as gs
+    import genesis as gs # imported inside the function because it takes long to load
     import numpy as np
 
     gs.init(backend=gs.cpu)
@@ -28,9 +26,17 @@ def simulate():
             dt = 0.01,
         ),
         show_viewer = True,
+        rigid_options=gs.options.RigidOptions(
+            enable_collision=True,
+            dt = 0.01,
+            enable_adjacent_collision = True,
+            enable_joint_limit = True,
+            gravity = np.array([0.0, -9.81, 0.0]),
+            constraint_solver = gs.constraint_solver.Newton   
+        )
     )
     scene.add_entity(gs.morphs.Plane())
-    robot = scene.add_entity(gs.morphs.URDF(file=str(urdf_file)))
+    robot = scene.add_entity(gs.morphs.URDF(file=str(urdf_file), pos=(0, 0, 1.5)))
     scene.build()
 
     jnt_names = ["emerge_plus_joint", "emerge_minus_joint"]
@@ -50,9 +56,12 @@ def simulate():
     for step in range(1000):
         t += dt
         # Both joints have the same sinusoidal target
-        target_angle = amplitude * np.sin(2 * np.pi * frequency * t)
+        target1 = amplitude * np.sin(2*np.pi*frequency*t)
+        target2 = amplitude * np.sin(2*np.pi*frequency*t + np.pi/2)
+        targets = np.array([target1, target2])
+
         # Second joint remains at 0.0
-        targets = np.array([target_angle, target_angle])
+        #targets = np.array([target_angle, target_angle])
 
         # Send target positions to both joints
         robot.control_dofs_position(targets, dofs_idx)
