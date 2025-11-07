@@ -11,6 +11,7 @@ urdf_file = urdf_dir / "modular_robot.urdf"
 def simulate():
     import genesis as gs # imported inside the function because it takes long to load
     import numpy as np
+    import torch
 
     gs.init(backend=gs.cpu)
 
@@ -36,9 +37,11 @@ def simulate():
         )
     )
     scene.add_entity(gs.morphs.Plane())
-    robot = scene.add_entity(gs.morphs.URDF(file=str(urdf_file), pos=(0, 0, 1.5)))
+    robot = scene.add_entity(gs.morphs.URDF(file=str(urdf_file), pos=(0, 0, 0)))
     scene.build()
-
+    
+    initial_position = robot.get_pos()
+    print("Robot initial position:", initial_position)
     jnt_names = ["emerge_plus_joint", "emerge_minus_joint"]
     dofs_idx = [robot.get_joint(name).dof_idx for name in jnt_names]
 
@@ -53,21 +56,24 @@ def simulate():
     frequency = 1.0  # 20 Hz oscillation
     amplitude = 0.5  # radians
 
-    for step in range(1000):
+    for _ in range(1000):
+        
         t += dt
-        # Both joints have the same sinusoidal target
+
         target1 = amplitude * np.sin(2*np.pi*frequency*t)
         target2 = amplitude * np.sin(2*np.pi*frequency*t + np.pi/2)
         targets = np.array([target1, target2])
 
-        # Second joint remains at 0.0
-        #targets = np.array([target_angle, target_angle])
-
         # Send target positions to both joints
         robot.control_dofs_position(targets, dofs_idx)
 
-        # Advance simulation by one step
         scene.step()
+    
+    final_position = robot.get_pos()
+    
+    print("Initial positions:", initial_position)
+    print("Final positions:", final_position)
+    print("Distance:", torch.norm(final_position - initial_position).absolute().item())
 
 
 def check_robot():
