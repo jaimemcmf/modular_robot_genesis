@@ -1,166 +1,33 @@
-<?xml version="1.0" ?>
-<robot name="modular_robot">
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="modular_robot">
 
-  <!-- ==================== BASE ==================== -->
-  <link name="flat_base_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.65"/>
-      <!-- Box inertia, size 0.0747 x 0.0747 x 0.0275115 -->
-      <inertia ixx="0.000342" ixy="0" ixz="0" iyy="0.000342" iyz="0" izz="0.000604"/>
-    </inertial>
+  <xacro:include filename="emerge_module.xacro" />
+  <xacro:include filename="flat_base.xacro" />
 
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.0747 0.0747 0.0275115"/>
-      </geometry>
-      <material name="grey">
-        <color rgba="0.7 0.7 0.7 1"/>
-      </material>
-    </visual>
+  <xacro:property name="flat_half_x" value="${0.0747 / 2.0}" />
+  <xacro:property name="emerge_half_x" value="${0.0305 / 2.0}" />
+  <xacro:property name="base_offset" value="${flat_half_x + emerge_half_x}" />
 
-    <!-- Collision now matches visual (no unintended overlaps) -->
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.0747 0.0747 0.0275115"/>
-      </geometry>
-    </collision>
-  </link>
+  <xacro:flat_base name="flat_base" />
+  <xacro:emerge_module name="emerge_plus" />
+  <xacro:emerge_module name="emerge_minus" />
+  <xacro:emerge_module name="emerge_y" />
 
-  <!-- ==================== +X CONNECTOR ==================== -->
-  <link name="emerge_plus_connector_link">
-    <inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.06"/>
-      <!-- computed inertia -->
-      <inertia ixx="8.43e-06" ixy="0" ixz="0" iyy="1.12e-05" iyz="0" izz="1.21e-05"/>
-    </inertial>
-
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.0385 0.0305 0.0275"/>
-      </geometry>
-      <material name="orange">
-        <color rgba="1 0.4 0 1"/>
-      </material>
-    </visual>
-
-    <collision>
-      <origin xyz="0 0 0"/>
-      <geometry>
-        <box size="0.0385 0.0305 0.0275"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <link name="emerge_plus_motor_link">
-    <inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.06"/>
-      <!-- computed inertia -->
-      <inertia ixx="1.32e-05" ixy="0" ixz="0" iyy="1.75e-05" iyz="0" izz="1.89e-05"/>
-    </inertial>
-
-    <visual>
-      <origin xyz="0 0 0"/>
-      <geometry>
-        <box size="0.048125 0.038125 0.034375"/>
-      </geometry>
-      <material name="orange">
-        <color rgba="1 0.4 0 1"/>
-      </material>
-    </visual>
-
-    <collision>
-      <origin xyz="0 0 0"/>
-      <geometry>
-        <box size="0.048125 0.038125 0.034375"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <joint name="emerge_plus_joint" type="revolute">
-    <parent link="emerge_plus_connector_link"/>
-    <child link="emerge_plus_motor_link"/>
-    <!-- Offset increased to remove collision overlap -->
-    <origin xyz="0.045 0 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="0.5" lower="-0.6" upper="0.6" velocity="2.0"/>
-    <dynamics damping="0.03"/>
-  </joint>
-
-  <!-- ==================== -X CONNECTOR (Mirrored) ==================== -->
-  <link name="emerge_minus_connector_link">
-    <inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.06"/>
-      <inertia ixx="8.43e-06" ixy="0" ixz="0" iyy="1.12e-05" iyz="0" izz="1.21e-05"/>
-    </inertial>
-
-    <visual>
-      <geometry>
-        <box size="0.0385 0.0305 0.0275"/>
-      </geometry>
-      <material name="orange">
-        <color rgba="1 0.4 0 1"/>
-      </material>
-    </visual>
-
-    <collision>
-      <geometry>
-        <box size="0.0385 0.0305 0.0275"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <link name="emerge_minus_motor_link">
-    <inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.06"/>
-      <inertia ixx="1.32e-05" ixy="0" ixz="0" iyy="1.75e-05" iyz="0" izz="1.89e-05"/>
-    </inertial>
-
-    <visual>
-      <geometry>
-        <box size="0.048125 0.038125 0.034375"/>
-      </geometry>
-      <material name="orange">
-        <color rgba="1 0.4 0 1"/>
-      </material>
-    </visual>
-
-    <collision>
-      <geometry>
-        <box size="0.048125 0.038125 0.034375"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <joint name="emerge_minus_joint" type="revolute">
-    <parent link="emerge_minus_connector_link"/>
-    <child link="emerge_minus_motor_link"/>
-    <!-- Same offset fix -->
-    <origin xyz="0.045 0 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="0.5" lower="-0.6" upper="0.6" velocity="2.0"/>
-    <dynamics damping="0.03"/>
-  </joint>
-
-  <!-- ==================== ATTACH TO BASE ==================== -->
   <joint name="joint_x_plus" type="fixed">
-    <parent link="flat_base_link"/>
-    <child link="emerge_plus_connector_link"/>
-    <!-- Adjusted to prevent contact penetration -->
-    <origin xyz="0.0576 0 0" rpy="0 0 0"/>
+    <parent link="flat_base_link" />
+    <child link="emerge_plus_connector_link" />
+    <origin xyz="${base_offset} 0 0" rpy="0 0 0" />
   </joint>
 
   <joint name="joint_x_minus" type="fixed">
-    <parent link="flat_base_link"/>
-    <child link="emerge_minus_connector_link"/>
-    <origin xyz="-0.0576 0 0" rpy="0 0 3.141592653589793"/>
+    <parent link="flat_base_link" />
+    <child link="emerge_minus_connector_link" />
+    <origin xyz="${-1 * base_offset} 0 0" rpy="0 0 ${pi}" />
   </joint>
 
+  <joint name="joint_y" type="fixed">
+    <parent link="flat_base_link" />
+    <child link="emerge_y_connector_link" />
+    <origin xyz="0 ${base_offset} 0" rpy="0 0 ${pi/2}" />
+  </joint>
 </robot>

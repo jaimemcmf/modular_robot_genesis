@@ -1,9 +1,14 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- Macro definition -->
-  <xacro:macro name="emerge_module" params="name">
+  <xacro:macro name="emerge_module" params="name xyz:='0 0 0' rpy:='0 0 0'">
     <link name="${name}_connector_link">
+      <inertial>
+        <origin xyz="0 0 0" />
+        <mass value="0.06" />
+        <inertia ixx="8.43e-06" ixy="0" ixz="0" iyy="1.12e-05" iyz="0" izz="1.21e-05" />
+      </inertial>
+
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
@@ -13,23 +18,24 @@
           <color rgba="1 0.4 0 1" />
         </material>
       </visual>
+
       <collision>
-        <origin xyz="0 0 0" rpy="0 0 0" />
+        <origin xyz="0 0 0" />
         <geometry>
           <box size="0.0385 0.0305 0.0275" />
         </geometry>
       </collision>
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="0.06" />
-        <inertia ixx="0.00006" iyy="0.00005" izz="0.00007"
-          ixy="0" ixz="0" iyz="0" />
-      </inertial>
     </link>
 
     <link name="${name}_motor_link">
+      <inertial>
+        <origin xyz="0 0 0" />
+        <mass value="0.06" />
+        <inertia ixx="1.32e-05" ixy="0" ixz="0" iyy="1.75e-05" iyz="0" izz="1.89e-05" />
+      </inertial>
+
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 0" />
+        <origin xyz="0 0 0" />
         <geometry>
           <box size="0.048125 0.038125 0.034375" />
         </geometry>
@@ -37,28 +43,24 @@
           <color rgba="1 0.4 0 1" />
         </material>
       </visual>
+
       <collision>
-        <origin xyz="0 0 0" rpy="0 0 0" />
+        <origin xyz="0 0 0" />
         <geometry>
           <box size="0.048125 0.038125 0.034375" />
         </geometry>
       </collision>
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="0.06" />
-        <inertia ixx="0.00006" iyy="0.00005" izz="0.00007"
-          ixy="0" ixz="0" iyz="0" />
-      </inertial>
     </link>
 
     <joint name="${name}_joint" type="revolute">
       <parent link="${name}_connector_link" />
       <child link="${name}_motor_link" />
-      <origin xyz="0.03 0 0" rpy="0 0 0" />
+      <!-- Offset increased to remove collision overlap -->
+      <origin xyz="0.042 0 0" rpy="0 0 0" />
       <axis xyz="0 1 0" />
-      <!-- <limit effort="0.5" velocity="2.0" lower="-0.12" upper="0.12" /> -->
-       <limit effort="0.5" velocity="2.0" lower="-0.6" upper="0.6" />
+      <limit effort="0.5" lower="-0.6" upper="0.6" velocity="2.0" />
+      <dynamics damping="0.03" />
     </joint>
   </xacro:macro>
-  <!-- <xacro:emerge_module name="emerge_plus"/> -->
+  <xacro:emerge_module name="emerge_plus"/>
 </robot>
