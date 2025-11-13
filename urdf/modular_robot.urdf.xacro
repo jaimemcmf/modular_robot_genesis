@@ -26,8 +26,8 @@
   </joint>
 
   <joint name="joint_y" type="fixed">
-    <parent link="base_link" />
+    <parent link="minus_motor_link" />
     <child link="y_connector_link" />
-    <origin xyz="0 ${base_offset} 0" rpy="0 0 ${pi/2}" />
+    <origin xyz="0.038125 0 0" rpy="0 0 0" />
   </joint>
 </robot>

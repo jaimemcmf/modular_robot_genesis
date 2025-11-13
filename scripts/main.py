@@ -9,12 +9,12 @@ import math
 
 project_root = Path(__file__).resolve().parents[1]
 urdf_dir = project_root / "urdf"
-xacro_file = urdf_dir / "modular_robot.urdf.xacro"
-# xacro_file = urdf_dir / "random_robot.xacro"
+#xacro_file = urdf_dir / "modular_robot.urdf.xacro"
+xacro_file = urdf_dir / "random_robot.urdf.xacro"
 urdf_file = urdf_dir / "modular_robot.urdf"
 
 
-def simulate():
+def simulate(num_modules: int):
     import genesis as gs  # imported inside the function because it takes long to load
     import numpy as np
     import torch
@@ -49,7 +49,11 @@ def simulate():
 
     initial_position = robot.get_pos()
     print("Robot initial position:", initial_position)
-    jnt_names = ["emerge_plus_joint", "emerge_minus_joint", "emerge_y_joint"]
+    jnt_names = []
+    for i in range(num_modules):
+        jnt_names.append(f"module_{i}_joint")
+    """ jnt_names = ["plus_joint", "minus_joint", "y_joint"] """
+    
     dofs_idx = [robot.get_joint(name).dof_idx for name in jnt_names]
 
     robot.set_dofs_kp(np.array([80.0, 80.0, 80.0]), dofs_idx)
@@ -106,20 +110,23 @@ def build_urdf():
 
 
 def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.urdf.xacro"):
-    """
-    Builds a random modular robot Xacro with a flat base as root and N emerge_modules attached.
-    Saves the generated XML to `output_path`.
-    """
 
-    # Define possible connection faces and their orientations
-    flat_half_x = 0.0747 / 2.0
-    emerge_half_x = 0.0305 / 2.0
-    base_offset = flat_half_x + emerge_half_x
+    base_half_xy = 0.0747 / 2.0
+    module_half_xy = 0.0305 / 2.0
+    base_offset = base_half_xy + module_half_xy
+    motor_link_offset = 0.038125
+    
     base_faces = {
         "front":  {"xyz": f"{base_offset} 0 0",  "rpy": "0 0 0"},
         "back":   {"xyz": f"{-base_offset} 0 0", "rpy": f"0 0 {math.pi}"},
         "left":   {"xyz": f"0 {base_offset} 0", "rpy": f"0 0 {math.pi/2}"},
         "right":  {"xyz": f"0 {-base_offset} 0",  "rpy": f"0 0 {-math.pi/2}"},
+    }
+    
+    module_faces = {
+        "front":  {"xyz": f"{motor_link_offset} 0 0",  "rpy": "0 0 0"},
+        "left":   {"xyz": f"0 {motor_link_offset} 0", "rpy": f"0 0 {math.pi/2}"},
+        "right":  {"xyz": f"0 {-motor_link_offset} 0",  "rpy": f"0 0 {-math.pi/2}"},
     }
 
     robot = Element("robot", {
@@ -141,8 +148,12 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
             break
 
         parent = random.choice(possible_parents)
-        available_faces = [
-            f for f in base_faces if f not in parent["used_faces"]]
+        if parent["name"] == "base":
+            available_faces = [
+                f for f in base_faces if f not in parent["used_faces"]]
+        else:
+            available_faces = [
+                f for f in module_faces if f not in parent["used_faces"]]
         if not available_faces:
             continue
 
@@ -154,8 +165,12 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
             {"name": module_name, "parent": parent["name"], "used_faces": set()})
 
         # Create joint connecting parent and module
-        xyz = base_faces[face]["xyz"]
-        rpy = base_faces[face]["rpy"]
+        if parent["name"] == "base":
+            xyz = base_faces[face]["xyz"]
+            rpy = base_faces[face]["rpy"]
+        else:
+            xyz = module_faces[face]["xyz"]
+            rpy = module_faces[face]["rpy"]
 
         joint_name = f"joint_{parent['name']}_{module_name}"
         joint = SubElement(
@@ -180,6 +195,7 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
         f.write(xml_str)
 
 if __name__ == "__main__":
-    """ build_urdf()
-    simulate() """
-    build_random_tree(2)
+    num_modules = 3
+    build_random_tree(num_modules)
+    build_urdf()
+    simulate(num_modules)

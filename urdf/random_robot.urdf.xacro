@@ -6,13 +6,19 @@
   <joint name="joint_base_module_0" type="fixed">
     <parent link="base_link"/>
     <child link="module_0_connector_link"/>
-    <origin xyz="0 -0.0526 0" rpy="0 0 -1.5707963267948966"/>
-  </joint>
-  <xacro:module name="module_0"/>
-  <joint name="joint_base_module_1" type="fixed">
-    <parent link="base_link"/>
-    <child link="module_1_connector_link"/>
     <origin xyz="0 0.0526 0" rpy="0 0 1.5707963267948966"/>
   </joint>
+  <xacro:module name="module_0"/>
+  <joint name="joint_module_0_module_1" type="fixed">
+    <parent link="module_0_motor_link"/>
+    <child link="module_1_connector_link"/>
+    <origin xyz="0 0.038125 0" rpy="0 0 1.5707963267948966"/>
+  </joint>
   <xacro:module name="module_1"/>
+  <joint name="joint_module_0_module_2" type="fixed">
+    <parent link="module_0_motor_link"/>
+    <child link="module_2_connector_link"/>
+    <origin xyz="0 -0.038125 0" rpy="0 0 -1.5707963267948966"/>
+  </joint>
+  <xacro:module name="module_2"/>
 </robot>

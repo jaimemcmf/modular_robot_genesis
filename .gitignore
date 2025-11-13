@@ -8,4 +8,4 @@ dist/
 *.egg-info/
 *.urdf
 test.py
-random_robot.xacro
+random_robot.urdf.xacro
