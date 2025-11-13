@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:macro name="flat_base" params="name='flat_base'">
+  <xacro:macro name="base" params="name='base'">
     <xacro:property name="name" value="flat_base" />
     <xacro:property name="mass" value="0.65" />
     <xacro:property name="size_x" value="0.1494" />
@@ -12,7 +12,7 @@
     <xacro:property name="iyy" value="${(1.0/12.0) * mass * (size_x*size_x + size_z*size_z)}" />
     <xacro:property name="izz" value="${(1.0/12.0) * mass * (size_x*size_x + size_y*size_y)}" />
 
-    <link name="flat_base_link">
+    <link name="base_link">
       <inertial>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <mass value="0.65" />

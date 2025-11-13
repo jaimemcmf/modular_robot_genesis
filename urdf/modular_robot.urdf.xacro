@@ -1,33 +1,33 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="modular_robot">
 
-  <xacro:include filename="emerge_module.xacro" />
-  <xacro:include filename="flat_base.xacro" />
+  <xacro:include filename="module.xacro" />
+  <xacro:include filename="base.xacro" />
 
   <xacro:property name="flat_half_x" value="${0.0747 / 2.0}" />
   <xacro:property name="emerge_half_x" value="${0.0305 / 2.0}" />
   <xacro:property name="base_offset" value="${flat_half_x + emerge_half_x}" />
 
-  <xacro:flat_base name="flat_base" />
-  <xacro:emerge_module name="emerge_plus" />
-  <xacro:emerge_module name="emerge_minus" />
-  <xacro:emerge_module name="emerge_y" />
+  <xacro:base name="base" />
+  <xacro:module name="plus" />
+  <xacro:module name="minus" />
+  <xacro:module name="y" />
 
   <joint name="joint_x_plus" type="fixed">
-    <parent link="flat_base_link" />
-    <child link="emerge_plus_connector_link" />
+    <parent link="base_link" />
+    <child link="plus_connector_link" />
     <origin xyz="${base_offset} 0 0" rpy="0 0 0" />
   </joint>
 
   <joint name="joint_x_minus" type="fixed">
-    <parent link="flat_base_link" />
-    <child link="emerge_minus_connector_link" />
+    <parent link="base_link" />
+    <child link="minus_connector_link" />
     <origin xyz="${-1 * base_offset} 0 0" rpy="0 0 ${pi}" />
   </joint>
 
   <joint name="joint_y" type="fixed">
-    <parent link="flat_base_link" />
-    <child link="emerge_y_connector_link" />
+    <parent link="base_link" />
+    <child link="y_connector_link" />
     <origin xyz="0 ${base_offset} 0" rpy="0 0 ${pi/2}" />
   </joint>
 </robot>

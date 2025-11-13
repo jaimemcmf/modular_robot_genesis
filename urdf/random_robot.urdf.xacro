@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="modular_robot">
+  <xacro:include filename="base.xacro"/>
+  <xacro:include filename="module.xacro"/>
+  <xacro:base name="base"/>
+  <joint name="joint_base_module_0" type="fixed">
+    <parent link="base_link"/>
+    <child link="module_0_connector_link"/>
+    <origin xyz="0 -0.0526 0" rpy="0 0 -1.5707963267948966"/>
+  </joint>
+  <xacro:module name="module_0"/>
+  <joint name="joint_base_module_1" type="fixed">
+    <parent link="base_link"/>
+    <child link="module_1_connector_link"/>
+    <origin xyz="0 0.0526 0" rpy="0 0 1.5707963267948966"/>
+  </joint>
+  <xacro:module name="module_1"/>
+</robot>

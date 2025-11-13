@@ -125,17 +125,17 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
     robot = Element("robot", {
                     "xmlns:xacro": "http://www.ros.org/wiki/xacro", "name": "modular_robot"})
 
-    SubElement(robot, "xacro:include", {"filename": "flat_base.xacro"})
-    SubElement(robot, "xacro:include", {"filename": "emerge_module.xacro"})
+    SubElement(robot, "xacro:include", {"filename": "base.xacro"})
+    SubElement(robot, "xacro:include", {"filename": "module.xacro"})
 
-    SubElement(robot, "xacro:flat_base", {"name": "flat_base"})
+    SubElement(robot, "xacro:base", {"name": "base"})
 
-    modules = [{"name": "flat_base", "parent": None, "used_faces": set()}]
+    modules = [{"name": "base", "parent": None, "used_faces": set()}]
 
     for i in range(num_modules):
         # Pick a valid parent (flat base or any emerge module with free faces)
         possible_parents = [m for m in modules if len(
-            m["used_faces"]) < (4 if m["name"] == "flat_base" else 3)]
+            m["used_faces"]) < (4 if m["name"] == "base" else 3)]
         if not possible_parents:
             print("⚠️ No more free attachment faces — stopping early.")
             break
@@ -149,7 +149,7 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
         face = random.choice(available_faces)
         parent["used_faces"].add(face)
 
-        module_name = f"emerge_{i}"
+        module_name = f"module_{i}"
         modules.append(
             {"name": module_name, "parent": parent["name"], "used_faces": set()})
 
@@ -161,8 +161,8 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
         joint = SubElement(
             robot, "joint", {"name": joint_name, "type": "fixed"})
 
-        if parent["name"] == "flat_base":
-            SubElement(joint, "parent", {"link": "flat_base_link"})
+        if parent["name"] == "base":
+            SubElement(joint, "parent", {"link": "base_link"})
         else:
             SubElement(joint, "parent", {
                        "link": f"{parent['name']}_motor_link"})
@@ -170,7 +170,7 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
         SubElement(joint, "child", {"link": f"{module_name}_connector_link"})
         # position and orientation
         SubElement(joint, "origin", {"xyz": xyz, "rpy": rpy})
-        SubElement(robot, "xacro:emerge_module", {
+        SubElement(robot, "xacro:module", {
                    "name": module_name})  # instance of module
 
     xml_str = minidom.parseString(
