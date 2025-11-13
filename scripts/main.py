@@ -9,7 +9,6 @@ import math
 
 project_root = Path(__file__).resolve().parents[1]
 urdf_dir = project_root / "urdf"
-#xacro_file = urdf_dir / "modular_robot.urdf.xacro"
 xacro_file = urdf_dir / "random_robot.urdf.xacro"
 urdf_file = urdf_dir / "modular_robot.urdf"
 
@@ -48,44 +47,35 @@ def simulate(num_modules: int):
     scene.build()
 
     initial_position = robot.get_pos()
-    print("Robot initial position:", initial_position)
+
     jnt_names = []
     for i in range(num_modules):
         jnt_names.append(f"module_{i}_joint")
-    """ jnt_names = ["plus_joint", "minus_joint", "y_joint"] """
     
     dofs_idx = [robot.get_joint(name).dof_idx for name in jnt_names]
 
-    robot.set_dofs_kp(np.array([80.0, 80.0, 80.0]), dofs_idx)
-    robot.set_dofs_kv(np.array([2.0, 2.0, 2.0]), dofs_idx)
+    robot.set_dofs_kp(np.full(num_modules, 80.0), dofs_idx)
+    robot.set_dofs_kv(np.full(num_modules, 2.0), dofs_idx)
     robot.set_dofs_force_range(
-        np.array([-3.0, -3.0, -3.0]), np.array([3.0, 3.0, 3.0]), dofs_idx)
+        np.full(num_modules, -3.0), np.full(num_modules, 3.0), dofs_idx)
 
     # initial position target
     t = 0.0
     dt = 0.01
-    frequency = 1.0  # 20 Hz oscillation
-    amplitude = 0.5  # radians
+    phases = np.random.uniform(0, 2*np.pi, num_modules)
+    amplitudes = np.random.uniform(0.4, 0.6, num_modules)     # around 0.5
+    frequencies = np.random.uniform(0.8, 1.2, num_modules)    # around 1.0 Hz
 
     for _ in range(1000):
 
         t += dt
-
-        target1 = amplitude * np.sin(2*np.pi*frequency*t)
-        target2 = amplitude * np.sin(2*np.pi*frequency*t + np.pi/2)
-        target_3 = amplitude * np.sin(2*np.pi*frequency*t + np.pi)
-
-        targets = np.array([target1, target2, target_3])
-
-        # Send target positions to both joints
+        targets = amplitudes * np.sin(2*np.pi*frequencies*t + phases)
         robot.control_dofs_position(targets, dofs_idx)
 
         scene.step()
 
     final_position = robot.get_pos()
 
-    print("Initial positions:", initial_position)
-    print("Final positions:", final_position)
     print("Distance:", torch.norm(
         final_position - initial_position).absolute().item())
 
@@ -195,7 +185,7 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
         f.write(xml_str)
 
 if __name__ == "__main__":
-    num_modules = 3
+    num_modules = 7
     build_random_tree(num_modules)
     build_urdf()
     simulate(num_modules)

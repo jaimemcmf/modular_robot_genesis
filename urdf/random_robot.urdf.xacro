@@ -6,19 +6,43 @@
   <joint name="joint_base_module_0" type="fixed">
     <parent link="base_link"/>
     <child link="module_0_connector_link"/>
-    <origin xyz="0 0.0526 0" rpy="0 0 1.5707963267948966"/>
+    <origin xyz="-0.0526 0 0" rpy="0 0 3.141592653589793"/>
   </joint>
   <xacro:module name="module_0"/>
-  <joint name="joint_module_0_module_1" type="fixed">
-    <parent link="module_0_motor_link"/>
+  <joint name="joint_base_module_1" type="fixed">
+    <parent link="base_link"/>
     <child link="module_1_connector_link"/>
-    <origin xyz="0 0.038125 0" rpy="0 0 1.5707963267948966"/>
+    <origin xyz="0 0.0526 0" rpy="0 0 1.5707963267948966"/>
   </joint>
   <xacro:module name="module_1"/>
-  <joint name="joint_module_0_module_2" type="fixed">
-    <parent link="module_0_motor_link"/>
+  <joint name="joint_base_module_2" type="fixed">
+    <parent link="base_link"/>
     <child link="module_2_connector_link"/>
-    <origin xyz="0 -0.038125 0" rpy="0 0 -1.5707963267948966"/>
+    <origin xyz="0.0526 0 0" rpy="0 0 0"/>
   </joint>
   <xacro:module name="module_2"/>
+  <joint name="joint_base_module_3" type="fixed">
+    <parent link="base_link"/>
+    <child link="module_3_connector_link"/>
+    <origin xyz="0 -0.0526 0" rpy="0 0 -1.5707963267948966"/>
+  </joint>
+  <xacro:module name="module_3"/>
+  <joint name="joint_module_3_module_4" type="fixed">
+    <parent link="module_3_motor_link"/>
+    <child link="module_4_connector_link"/>
+    <origin xyz="0 -0.038125 0" rpy="0 0 -1.5707963267948966"/>
+  </joint>
+  <xacro:module name="module_4"/>
+  <joint name="joint_module_1_module_5" type="fixed">
+    <parent link="module_1_motor_link"/>
+    <child link="module_5_connector_link"/>
+    <origin xyz="0 -0.038125 0" rpy="0 0 -1.5707963267948966"/>
+  </joint>
+  <xacro:module name="module_5"/>
+  <joint name="joint_module_0_module_6" type="fixed">
+    <parent link="module_0_motor_link"/>
+    <child link="module_6_connector_link"/>
+    <origin xyz="0.038125 0 0" rpy="0 0 0"/>
+  </joint>
+  <xacro:module name="module_6"/>
 </robot>
