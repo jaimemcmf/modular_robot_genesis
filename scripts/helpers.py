@@ -1,6 +1,7 @@
 import subprocess
 from urdfpy import URDF
 
+
 def check_robot(path):
     robot = URDF.load(path)
     print(robot)
@@ -10,7 +11,7 @@ def check_robot(path):
 def build_urdf(path):
     try:
         subprocess.run(
-            ["xacro", "--inorder", str(path), "-o", str(path.with_suffix(''))],
+            ["xacro", "--inorder", str(path), "-o", str(path.with_suffix(""))],
             check=True,
         )
     except subprocess.CalledProcessError as e:
