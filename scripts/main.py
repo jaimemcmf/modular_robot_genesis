@@ -13,6 +13,7 @@ urdf_dir = project_root / "urdf"
 
 
 def simulate(gen_size: int, num_modules: int):
+
     gs.init(backend=gs.cpu)
 
     scene = gs.Scene(
@@ -42,6 +43,7 @@ def simulate(gen_size: int, num_modules: int):
 
     initial_positions = [robot.get_pos() for robot in robots]
 
+    controllers = []
     for idx, robot in enumerate(robots):
         dofs_idx = list(
             chain.from_iterable(
@@ -95,7 +97,7 @@ def create_robots(scene, gen_size: int, robot_size: int):
     for i in range(gen_size):
         xacro_file = urdf_dir / f"random_robot_{i}.urdf.xacro"
         build_random_tree(
-            num_modules=robot_size, robot_idx=i, output_path=str(xacro_file)
+            num_modules=robot_size, robot_idx=i, output_path=str(xacro_file), robot_line=False
         )
         build_urdf(xacro_file)
         possible_locations = [(0.5 * (i - 2), 0, 0), (0, 0.5 * (i - 2), 0)]
@@ -110,7 +112,7 @@ def create_robots(scene, gen_size: int, robot_size: int):
 
 
 def build_random_tree(
-    num_modules: int, robot_idx="x", output_path: str = "urdf/random_robot.urdf.xacro"
+    num_modules: int, robot_idx="x", output_path: str = "urdf/random_robot.urdf.xacro", robot_line = False
 ):
     base_half_xy = 0.0747 / 2.0
     module_half_xy = 0.0305 / 2.0
@@ -122,12 +124,16 @@ def build_random_tree(
         "back": {"xyz": f"{-base_offset} 0 0", "rpy": f"0 0 {math.pi}"},
         "left": {"xyz": f"0 {base_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
         "right": {"xyz": f"0 {-base_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
+    } if not robot_line else {
+        "front": {"xyz": f"{base_offset} 0 0", "rpy": "0 0 0"},
     }
 
     module_faces = {
         "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
         "left": {"xyz": f"0 {motor_link_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
         "right": {"xyz": f"0 {-motor_link_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
+    } if not robot_line else {
+        "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
     }
 
     robot = Element(
@@ -143,22 +149,19 @@ def build_random_tree(
     modules = [{"name": "base", "parent": None, "used_faces": set()}]
 
     for i in range(num_modules):
-        # Pick a valid parent (flat base or any emerge module with free faces)
-        possible_parents = [
-            m
-            for m in modules
-            if len(m["used_faces"]) < (4 if m["name"] == "base" else 3)
-        ]
-        if not possible_parents:
+        # Pick a valid parent (base or any module) that still has a free face
+        candidate_parents = []
+        for m in modules:
+            if m["name"] == "base":
+                available_faces = [f for f in base_faces if f not in m["used_faces"]]
+            else:
+                available_faces = [f for f in module_faces if f not in m["used_faces"]]
+            if available_faces:
+                candidate_parents.append((m, available_faces))
+        if not candidate_parents:
             break
 
-        parent = random.choice(possible_parents)
-        if parent["name"] == "base":
-            available_faces = [f for f in base_faces if f not in parent["used_faces"]]
-        else:
-            available_faces = [f for f in module_faces if f not in parent["used_faces"]]
-        if not available_faces:
-            continue
+        parent, available_faces = random.choice(candidate_parents)
 
         face = random.choice(available_faces)
         parent["used_faces"].add(face)
@@ -198,4 +201,4 @@ def build_random_tree(
 
 
 if __name__ == "__main__":
-    simulate(gen_size=7, num_modules=3)
+    simulate(gen_size=2, num_modules=5)
