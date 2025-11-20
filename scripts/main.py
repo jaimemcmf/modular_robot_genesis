@@ -2,21 +2,17 @@ import subprocess
 from pathlib import Path
 from urdfpy import URDF
 import random
-import json
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 import math
+import genesis as gs
+from itertools import chain
+import numpy as np
 
 project_root = Path(__file__).resolve().parents[1]
 urdf_dir = project_root / "urdf"
-xacro_file = urdf_dir / "random_robot.urdf.xacro"
-urdf_file = urdf_dir / "modular_robot.urdf"
 
-
-def simulate(num_modules: int):
-    import genesis as gs  # imported inside the function because it takes long to load
-    import numpy as np
-    import torch
+def simulate(gen_size: int, num_modules: int):
 
     gs.init(backend=gs.cpu)
 
@@ -42,64 +38,77 @@ def simulate(num_modules: int):
         )
     )
     scene.add_entity(gs.morphs.Plane())
-    robot = scene.add_entity(gs.morphs.URDF(
-        file=str(urdf_file), pos=(0, 0, 0)))
+    robots = create_robots(scene, gen_size, robot_size=num_modules)
     scene.build()
 
-    initial_position = robot.get_pos()
+    initial_positions = [robot.get_pos() for robot in robots]
 
-    jnt_names = []
-    for i in range(num_modules):
-        jnt_names.append(f"module_{i}_joint")
-    
-    dofs_idx = [robot.get_joint(name).dof_idx for name in jnt_names]
+    for idx, robot in enumerate(robots):
+        
+        dofs_idx = list(chain.from_iterable([joint.dofs_idx_local for joint in robot.joints if 'module' in joint.name]))
+        robot.dofs_idx = dofs_idx
+        robot.set_dofs_kp(np.full(num_modules, 80.0), dofs_idx)
+        robot.set_dofs_kv(np.full(num_modules, 2.0), dofs_idx)
+        robot.set_dofs_force_range(
+            np.full(num_modules, -3.0), np.full(num_modules, 3.0), dofs_idx)
 
-    robot.set_dofs_kp(np.full(num_modules, 80.0), dofs_idx)
-    robot.set_dofs_kv(np.full(num_modules, 2.0), dofs_idx)
-    robot.set_dofs_force_range(
-        np.full(num_modules, -3.0), np.full(num_modules, 3.0), dofs_idx)
-
-    # initial position target
-    t = 0.0
-    dt = 0.01
-    phases = np.random.uniform(0, 2*np.pi, num_modules)
-    amplitudes = np.random.uniform(0.4, 0.6, num_modules)     # around 0.5
-    frequencies = np.random.uniform(0.8, 1.2, num_modules)    # around 1.0 Hz
+        # initial position target
+        t = 0.0
+        dt = 0.01
+        phases = np.random.uniform(0, 2*np.pi, num_modules)
+        amplitudes = np.random.uniform(0.4, 0.6, num_modules)     # around 0.5
+        frequencies = np.random.uniform(0.8, 1.2, num_modules)    # around 1.0 Hz
+        print(f"Robot {idx} DOOONE:")
 
     for _ in range(1000):
 
         t += dt
-        targets = amplitudes * np.sin(2*np.pi*frequencies*t + phases)
-        robot.control_dofs_position(targets, dofs_idx)
+        for robot in robots:
+            targets = amplitudes * np.sin(2*np.pi*frequencies*t + phases)
+            robot.control_dofs_position(targets, robot.dofs_idx)
 
         scene.step()
 
-    final_position = robot.get_pos()
+    final_positions = [robot.get_pos() for robot in robots]
 
-    print("Distance:", torch.norm(
-        final_position - initial_position).absolute().item())
+    print("Distances:", [
+          np.linalg.norm(final - initial) for final, initial in zip(final_positions, initial_positions)])
+    
+    for i in range(len(robots)):
+        Path.unlink(urdf_dir / f"random_robot_{i}.urdf.xacro")
+        Path.unlink(urdf_dir / f"random_robot_{i}.urdf")
 
 
-def check_robot():
-    robot = URDF.load(urdf_file)
+def check_robot(path):
+    robot = URDF.load(path)
     print(robot)
     print(len(robot.links), len(robot.joints))
 
 
-def build_urdf():
-    if xacro_file.exists():
-        print("[INFO] Expanding Xacro → URDF...")
-        try:
-            subprocess.run(
-                ["xacro", "--inorder", str(xacro_file), "-o", str(urdf_file)],
-                check=True,
-            )
-            print(f"[OK] Generated: {urdf_file}")
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to generate URDF from Xacro:\n{e}")
+def build_urdf(path):
+
+    try:
+        subprocess.run(
+            ["xacro", "--inorder", str(path), "-o", str(path.with_suffix(''))],
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to generate URDF from Xacro:\n{e}")
+        
+def create_robots(scene, gen_size:int, robot_size: int):
+    robots = []
+    for i in range(gen_size):
+        xacro_file = urdf_dir / f"random_robot_{i}.urdf.xacro"
+        build_random_tree(num_modules=robot_size, robot_idx=i, output_path=str(xacro_file))
+        build_urdf(xacro_file)
+        possible_locations = [(0.5*i,0,0), (0,0.5*i,0)]
+        robot = scene.add_entity(gs.morphs.URDF(
+            file=str(xacro_file.with_suffix('')), pos=random.choices(possible_locations)[0]))
+        robots.append(robot)
+    return robots
 
 
-def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.urdf.xacro"):
+def build_random_tree(num_modules: int, robot_idx='x', output_path: str = "urdf/random_robot.urdf.xacro"):
 
     base_half_xy = 0.0747 / 2.0
     module_half_xy = 0.0305 / 2.0
@@ -150,7 +159,7 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
         face = random.choice(available_faces)
         parent["used_faces"].add(face)
 
-        module_name = f"module_{i}"
+        module_name = f"robot_{robot_idx}_module_{i}"
         modules.append(
             {"name": module_name, "parent": parent["name"], "used_faces": set()})
 
@@ -185,7 +194,5 @@ def build_random_tree(num_modules: int, output_path: str = "urdf/random_robot.ur
         f.write(xml_str)
 
 if __name__ == "__main__":
-    num_modules = 7
-    build_random_tree(num_modules)
-    build_urdf()
-    simulate(num_modules)
+
+    simulate(gen_size = 7, num_modules = 3)

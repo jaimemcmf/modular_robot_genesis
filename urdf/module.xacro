@@ -62,5 +62,5 @@
       <dynamics damping="0.03" />
     </joint>
   </xacro:macro>
-  <!-- <xacro:emerge_module name="instance"/> -->
+  <!-- <xacro:module name="instance"/> -->
 </robot>
