@@ -1,6 +1,4 @@
-import subprocess
 from pathlib import Path
-from urdfpy import URDF
 import random
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
@@ -8,9 +6,11 @@ import math
 import genesis as gs
 from itertools import chain
 import numpy as np
+from helpers import *
 
 project_root = Path(__file__).resolve().parents[1]
 urdf_dir = project_root / "urdf"
+
 
 def simulate(gen_size: int, num_modules: int):
 
@@ -44,8 +44,9 @@ def simulate(gen_size: int, num_modules: int):
     initial_positions = [robot.get_pos() for robot in robots]
 
     for idx, robot in enumerate(robots):
-        
-        dofs_idx = list(chain.from_iterable([joint.dofs_idx_local for joint in robot.joints if 'module' in joint.name]))
+
+        dofs_idx = list(chain.from_iterable(
+            [joint.dofs_idx_local for joint in robot.joints if 'module' in joint.name]))
         robot.dofs_idx = dofs_idx
         robot.set_dofs_kp(np.full(num_modules, 80.0), dofs_idx)
         robot.set_dofs_kv(np.full(num_modules, 2.0), dofs_idx)
@@ -57,7 +58,8 @@ def simulate(gen_size: int, num_modules: int):
         dt = 0.01
         phases = np.random.uniform(0, 2*np.pi, num_modules)
         amplitudes = np.random.uniform(0.4, 0.6, num_modules)     # around 0.5
-        frequencies = np.random.uniform(0.8, 1.2, num_modules)    # around 1.0 Hz
+        frequencies = np.random.uniform(
+            0.8, 1.2, num_modules)    # around 1.0 Hz
         print(f"Robot {idx} DOOONE:")
 
     for _ in range(1000):
@@ -73,35 +75,20 @@ def simulate(gen_size: int, num_modules: int):
 
     print("Distances:", [
           np.linalg.norm(final - initial) for final, initial in zip(final_positions, initial_positions)])
-    
+
     for i in range(len(robots)):
         Path.unlink(urdf_dir / f"random_robot_{i}.urdf.xacro")
         Path.unlink(urdf_dir / f"random_robot_{i}.urdf")
 
 
-def check_robot(path):
-    robot = URDF.load(path)
-    print(robot)
-    print(len(robot.links), len(robot.joints))
-
-
-def build_urdf(path):
-
-    try:
-        subprocess.run(
-            ["xacro", "--inorder", str(path), "-o", str(path.with_suffix(''))],
-            check=True,
-        )
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to generate URDF from Xacro:\n{e}")
-        
-def create_robots(scene, gen_size:int, robot_size: int):
+def create_robots(scene, gen_size: int, robot_size: int):
     robots = []
     for i in range(gen_size):
         xacro_file = urdf_dir / f"random_robot_{i}.urdf.xacro"
-        build_random_tree(num_modules=robot_size, robot_idx=i, output_path=str(xacro_file))
+        build_random_tree(num_modules=robot_size, robot_idx=i,
+                          output_path=str(xacro_file))
         build_urdf(xacro_file)
-        possible_locations = [(0.5*i,0,0), (0,0.5*i,0)]
+        possible_locations = [(0.5*(i-2), 0, 0), (0, 0.5*(i-2), 0)]
         robot = scene.add_entity(gs.morphs.URDF(
             file=str(xacro_file.with_suffix('')), pos=random.choices(possible_locations)[0]))
         robots.append(robot)
@@ -114,14 +101,14 @@ def build_random_tree(num_modules: int, robot_idx='x', output_path: str = "urdf/
     module_half_xy = 0.0305 / 2.0
     base_offset = base_half_xy + module_half_xy
     motor_link_offset = 0.038125
-    
+
     base_faces = {
         "front":  {"xyz": f"{base_offset} 0 0",  "rpy": "0 0 0"},
         "back":   {"xyz": f"{-base_offset} 0 0", "rpy": f"0 0 {math.pi}"},
         "left":   {"xyz": f"0 {base_offset} 0", "rpy": f"0 0 {math.pi/2}"},
         "right":  {"xyz": f"0 {-base_offset} 0",  "rpy": f"0 0 {-math.pi/2}"},
     }
-    
+
     module_faces = {
         "front":  {"xyz": f"{motor_link_offset} 0 0",  "rpy": "0 0 0"},
         "left":   {"xyz": f"0 {motor_link_offset} 0", "rpy": f"0 0 {math.pi/2}"},
@@ -143,7 +130,6 @@ def build_random_tree(num_modules: int, robot_idx='x', output_path: str = "urdf/
         possible_parents = [m for m in modules if len(
             m["used_faces"]) < (4 if m["name"] == "base" else 3)]
         if not possible_parents:
-            print("⚠️ No more free attachment faces — stopping early.")
             break
 
         parent = random.choice(possible_parents)
@@ -193,6 +179,7 @@ def build_random_tree(num_modules: int, robot_idx='x', output_path: str = "urdf/
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(xml_str)
 
+
 if __name__ == "__main__":
 
-    simulate(gen_size = 7, num_modules = 3)
+    simulate(gen_size=7, num_modules=3)
