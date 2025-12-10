@@ -7,6 +7,8 @@ import genesis as gs
 from itertools import chain
 import numpy as np
 from helpers import build_urdf
+import torch
+import argparse
 
 project_root = Path(__file__).resolve().parents[1]
 urdf_dir = project_root / "urdf"
@@ -27,7 +29,7 @@ def simulate(gen_size: int, num_modules: int):
         sim_options=gs.options.SimOptions(
             dt=0.01,
         ),
-        show_viewer=True,
+        show_viewer=False,
         rigid_options=gs.options.RigidOptions(
             enable_collision=True,
             dt=0.01,
@@ -67,7 +69,6 @@ def simulate(gen_size: int, num_modules: int):
         phases = np.random.uniform(0, 2 * np.pi, num_modules)
         amplitudes = np.random.uniform(0.4, 0.6, num_modules)  # around 0.5
         frequencies = np.random.uniform(0.8, 1.2, num_modules)  # around 1.0 Hz
-        print(f"Robot {idx} DOOONE:")
 
     for _ in range(1000):
         t += dt
@@ -79,13 +80,11 @@ def simulate(gen_size: int, num_modules: int):
 
     final_positions = [robot.get_pos() for robot in robots]
 
-    print(
-        "Distances:",
-        [
-            np.linalg.norm(final - initial)
-            for final, initial in zip(final_positions, initial_positions)
-        ],
-    )
+    distances = torch.stack(final_positions) - torch.stack(initial_positions)
+
+
+    distances = torch.norm(distances, dim=1)   # GPU parallel
+    print("Distances:", distances.cpu().tolist())
 
     for i in range(len(robots)):
         Path.unlink(urdf_dir / f"random_robot_{i}.urdf.xacro")
@@ -161,14 +160,23 @@ def build_random_tree(
         if not candidate_parents:
             break
 
-        parent, available_faces = random.choice(candidate_parents)
+        parent = random.choice(possible_parents)
+        if parent["name"] == "base":
+            available_faces = [
+                f for f in base_faces if f not in parent["used_faces"]]
+        else:
+            available_faces = [
+                f for f in module_faces if f not in parent["used_faces"]]
+        if not available_faces:
+            continue
 
         face = random.choice(available_faces)
         parent["used_faces"].add(face)
 
         module_name = f"robot_{robot_idx}_module_{i}"
         modules.append(
-            {"name": module_name, "parent": parent["name"], "used_faces": set()}
+            {"name": module_name,
+                "parent": parent["name"], "used_faces": set()}
         )
 
         # Create joint connecting parent and module
@@ -180,17 +188,20 @@ def build_random_tree(
             rpy = module_faces[face]["rpy"]
 
         joint_name = f"joint_{parent['name']}_{module_name}"
-        joint = SubElement(robot, "joint", {"name": joint_name, "type": "fixed"})
+        joint = SubElement(
+            robot, "joint", {"name": joint_name, "type": "fixed"})
 
         if parent["name"] == "base":
             SubElement(joint, "parent", {"link": "base_link"})
         else:
-            SubElement(joint, "parent", {"link": f"{parent['name']}_motor_link"})
+            SubElement(joint, "parent", {
+                       "link": f"{parent['name']}_motor_link"})
         # child link, always the connector link
         SubElement(joint, "child", {"link": f"{module_name}_connector_link"})
         # position and orientation
         SubElement(joint, "origin", {"xyz": xyz, "rpy": rpy})
-        SubElement(robot, "xacro:module", {"name": module_name})  # instance of module
+        # instance of module
+        SubElement(robot, "xacro:module", {"name": module_name})
 
     xml_str = minidom.parseString(tostring(robot, encoding="unicode")).toprettyxml(
         indent="  "
@@ -201,4 +212,22 @@ def build_random_tree(
 
 
 if __name__ == "__main__":
-    simulate(gen_size=2, num_modules=5)
+    parser = argparse.ArgumentParser(description="Genesis Modular Robot Simulation")
+
+    parser.add_argument(
+        "-r", "--robots",
+        type=int,
+        default=1,
+        help="Number of robots to simulate (default = 1)"
+    )
+
+    parser.add_argument(
+        "-m", "--modules",
+        type=int,
+        default=5,
+        help="Number of modules per robot (default = 5)"
+    )
+
+    args = parser.parse_args()
+
+    simulate(gen_size=args.robots, num_modules=args.modules)
