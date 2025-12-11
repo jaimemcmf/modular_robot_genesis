@@ -1,12 +1,11 @@
 import argparse
 from pathlib import Path
 import random
-from xml.etree.ElementTree import Element, SubElement, tostring
 import math
 import genesis as gs
 from itertools import chain
 import numpy as np
-from helpers import build_urdf, build_random_tree
+from helpers import build_urdf, build_random_tree, init_genesis
 import torch
 from dataclasses import dataclass
 
@@ -28,32 +27,6 @@ class Robot:
 
     def __repr__(self):
         return f"Robot(id={self.id}, num_modules={self.num_modules})"
-
-def init_genesis():
-    scene = gs.Scene(
-        viewer_options=gs.options.ViewerOptions(
-            camera_pos=(0, -3.5, 2.5),
-            camera_lookat=(0.0, 0.0, 0.5),
-            camera_fov=30,
-            res=(960, 640),
-            max_FPS=60,
-        ),
-        sim_options=gs.options.SimOptions(
-            dt=0.01,
-        ),
-        show_viewer=False,
-        rigid_options=gs.options.RigidOptions(
-            enable_collision=True,
-            dt=0.01,
-            enable_adjacent_collision=True,
-            enable_joint_limit=True,
-            gravity=np.array([0.0, -9.81, 0.0]),
-            constraint_solver=gs.constraint_solver.Newton,
-        ),
-    )
-    scene.add_entity(gs.morphs.Plane())
-
-    return scene
 
 def add_gen_to_scene(scene, robot_gen):
     for i, robot in enumerate(robot_gen):
@@ -288,14 +261,12 @@ def crossover(selected_robots, gen_size: int):
     return children
 
 
-def main(num_generations=5, generation_size=8):
-    generations = 5
-    gen_size = 8
+def main(num_generations, generation_size):
 
     gs.init(backend=gs.cpu)
 
     scene = init_genesis()
-    robot_gen = initialization(gen_size)
+    robot_gen = initialization(generation_size)
     add_gen_to_scene(scene, robot_gen)
     scene.build()
 
@@ -303,10 +274,10 @@ def main(num_generations=5, generation_size=8):
     evaluate(scene, robot_gen)
     print("Initial fitnesses:", [round(r.fitness, 4) for r in robot_gen])
 
-    for g in range(1, generations + 1):
+    for g in range(1, num_generations + 1):
 
         selected = selection(robot_gen)
-        new_gen = crossover(selected, gen_size)
+        new_gen = crossover(selected, generation_size)
         new_gen = mutation(new_gen)
 
         scene = init_genesis()
