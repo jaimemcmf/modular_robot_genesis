@@ -1,5 +1,10 @@
 import subprocess
 from urdfpy import URDF
+import random
+import math
+from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.dom import minidom
+
 
 
 def check_robot(path):
@@ -16,3 +21,97 @@ def build_urdf(path):
         )
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to generate URDF from Xacro:\n{e}")
+
+def build_random_tree(
+    num_modules: int, robot_idx="x", output_path: str = "urdf/random_robot.urdf.xacro", robot_line=False
+):
+    base_half_xy = 0.0747 / 2.0
+    module_half_xy = 0.0305 / 2.0
+    base_offset = base_half_xy + module_half_xy
+    motor_link_offset = 0.038125
+
+    base_faces = (
+        {
+            "front": {"xyz": f"{base_offset} 0 0", "rpy": "0 0 0"},
+            "back": {"xyz": f"{-base_offset} 0 0", "rpy": f"0 0 {math.pi}"},
+            "left": {"xyz": f"0 {base_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
+            "right": {"xyz": f"0 {-base_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
+        }
+        if not robot_line
+        else {
+            "front": {"xyz": f"{base_offset} 0 0", "rpy": "0 0 0"},
+        }
+    )
+
+    module_faces = (
+        {
+            "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
+            "left": {"xyz": f"0 {motor_link_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
+            "right": {"xyz": f"0 {-motor_link_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
+        }
+        if not robot_line
+        else {
+            "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
+        }
+    )
+
+    robot = Element(
+        "robot",
+        {"xmlns:xacro": "http://www.ros.org/wiki/xacro", "name": "modular_robot"},
+    )
+
+    SubElement(robot, "xacro:include", {"filename": "base.xacro"})
+    SubElement(robot, "xacro:include", {"filename": "module.xacro"})
+
+    SubElement(robot, "xacro:base", {"name": "base"})
+
+    modules = [{"name": "base", "parent": None, "used_faces": set()}]
+
+    for i in range(num_modules):
+        # Build list of candidate parents and their available faces
+        candidate_parents = []
+        for m in modules:
+            if m["name"] == "base":
+                available_faces = [
+                    f for f in base_faces if f not in m["used_faces"]]
+            else:
+                available_faces = [
+                    f for f in module_faces if f not in m["used_faces"]]
+            if available_faces:
+                candidate_parents.append((m, available_faces))
+        if not candidate_parents:
+            break
+
+        # Pick a parent and a face
+        parent, available_faces = random.choice(candidate_parents)
+        face = random.choice(available_faces)
+        parent["used_faces"].add(face)
+
+        module_name = f"robot_{robot_idx}_module_{i}"
+        modules.append(
+            {"name": module_name, "parent": parent["name"], "used_faces": set()})
+
+        # Create joint connecting parent and module
+        if parent["name"] == "base":
+            xyz = base_faces[face]["xyz"]
+            rpy = base_faces[face]["rpy"]
+            parent_link = "base_link"
+        else:
+            xyz = module_faces[face]["xyz"]
+            rpy = module_faces[face]["rpy"]
+            parent_link = f"{parent['name']}_motor_link"
+
+        joint_name = f"joint_{parent['name']}_{module_name}"
+        joint = SubElement(
+            robot, "joint", {"name": joint_name, "type": "fixed"})
+        SubElement(joint, "parent", {"link": parent_link})
+        SubElement(joint, "child", {"link": f"{module_name}_connector_link"})
+        SubElement(joint, "origin", {"xyz": xyz, "rpy": rpy})
+        SubElement(robot, "xacro:module", {"name": module_name})
+
+    xml_str = minidom.parseString(tostring(robot, encoding="unicode")).toprettyxml(
+        indent="  "
+    )
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(xml_str)
