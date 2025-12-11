@@ -45,8 +45,9 @@ def simulate(gen_size: int, num_modules: int):
 
     initial_positions = [robot.get_pos() for robot in robots]
 
-    controllers = []
-    for idx, robot in enumerate(robots):
+    # Prepare per-robot control params and dof indices
+    control_params = []  # list of dicts per robot
+    for robot in robots:
         dofs_idx = list(
             chain.from_iterable(
                 [
@@ -57,38 +58,49 @@ def simulate(gen_size: int, num_modules: int):
             )
         )
         robot.dofs_idx = dofs_idx
-        robot.set_dofs_kp(np.full(num_modules, 80.0), dofs_idx)
-        robot.set_dofs_kv(np.full(num_modules, 2.0), dofs_idx)
-        robot.set_dofs_force_range(
-            np.full(num_modules, -3.0), np.full(num_modules, 3.0), dofs_idx
+        # Safety: clamp sizes to available DOFs
+        n = len(dofs_idx)
+        if n == 0:
+            control_params.append(
+                {"phases": np.array([]), "amplitudes": np.array(
+                    []), "frequencies": np.array([])}
+            )
+            continue
+
+        robot.set_dofs_kp(np.full(n, 80.0), dofs_idx)
+        robot.set_dofs_kv(np.full(n, 2.0), dofs_idx)
+        robot.set_dofs_force_range(np.full(n, -3.0), np.full(n, 3.0), dofs_idx)
+
+        phases = np.random.uniform(0, 2 * np.pi, n)
+        amplitudes = np.random.uniform(0.4, 0.6, n)   # around 0.5
+        frequencies = np.random.uniform(0.8, 1.2, n)  # around 1.0 Hz
+        control_params.append(
+            {"phases": phases, "amplitudes": amplitudes, "frequencies": frequencies}
         )
 
-        # initial position target
-        t = 0.0
-        dt = 0.01
-        phases = np.random.uniform(0, 2 * np.pi, num_modules)
-        amplitudes = np.random.uniform(0.4, 0.6, num_modules)  # around 0.5
-        frequencies = np.random.uniform(0.8, 1.2, num_modules)  # around 1.0 Hz
-
+    t = 0.0
+    dt = 0.01
     for _ in range(1000):
         t += dt
-        for robot in robots:
-            targets = amplitudes * np.sin(2 * np.pi * frequencies * t + phases)
+        for robot, params in zip(robots, control_params):
+            if len(robot.dofs_idx) == 0:
+                continue
+            targets = params["amplitudes"] * np.sin(
+                2 * np.pi * params["frequencies"] * t + params["phases"]
+            )
             robot.control_dofs_position(targets, robot.dofs_idx)
-
         scene.step()
 
     final_positions = [robot.get_pos() for robot in robots]
 
     distances = torch.stack(final_positions) - torch.stack(initial_positions)
-
-
-    distances = torch.norm(distances, dim=1)   # GPU parallel
+    distances = torch.norm(distances, dim=1) 
     print("Distances:", distances.cpu().tolist())
 
+    # Clean up generated files; ignore if already removed
     for i in range(len(robots)):
-        Path.unlink(urdf_dir / f"random_robot_{i}.urdf.xacro")
-        Path.unlink(urdf_dir / f"random_robot_{i}.urdf")
+        (urdf_dir / f"random_robot_{i}.urdf.xacro").unlink(missing_ok=True)
+        (urdf_dir / f"random_robot_{i}.urdf").unlink(missing_ok=True)
 
 
 def create_robots(scene, gen_size: int, robot_size: int):
@@ -103,7 +115,7 @@ def create_robots(scene, gen_size: int, robot_size: int):
         robot = scene.add_entity(
             gs.morphs.URDF(
                 file=str(xacro_file.with_suffix("")),
-                pos=random.choices(possible_locations)[0],
+                pos=random.choice(possible_locations),
             )
         )
         robots.append(robot)
@@ -111,29 +123,37 @@ def create_robots(scene, gen_size: int, robot_size: int):
 
 
 def build_random_tree(
-    num_modules: int, robot_idx="x", output_path: str = "urdf/random_robot.urdf.xacro", robot_line = False
+    num_modules: int, robot_idx="x", output_path: str = "urdf/random_robot.urdf.xacro", robot_line=False
 ):
     base_half_xy = 0.0747 / 2.0
     module_half_xy = 0.0305 / 2.0
     base_offset = base_half_xy + module_half_xy
     motor_link_offset = 0.038125
 
-    base_faces = {
-        "front": {"xyz": f"{base_offset} 0 0", "rpy": "0 0 0"},
-        "back": {"xyz": f"{-base_offset} 0 0", "rpy": f"0 0 {math.pi}"},
-        "left": {"xyz": f"0 {base_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
-        "right": {"xyz": f"0 {-base_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
-    } if not robot_line else {
-        "front": {"xyz": f"{base_offset} 0 0", "rpy": "0 0 0"},
-    }
+    base_faces = (
+        {
+            "front": {"xyz": f"{base_offset} 0 0", "rpy": "0 0 0"},
+            "back": {"xyz": f"{-base_offset} 0 0", "rpy": f"0 0 {math.pi}"},
+            "left": {"xyz": f"0 {base_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
+            "right": {"xyz": f"0 {-base_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
+        }
+        if not robot_line
+        else {
+            "front": {"xyz": f"{base_offset} 0 0", "rpy": "0 0 0"},
+        }
+    )
 
-    module_faces = {
-        "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
-        "left": {"xyz": f"0 {motor_link_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
-        "right": {"xyz": f"0 {-motor_link_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
-    } if not robot_line else {
-        "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
-    }
+    module_faces = (
+        {
+            "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
+            "left": {"xyz": f"0 {motor_link_offset} 0", "rpy": f"0 0 {math.pi / 2}"},
+            "right": {"xyz": f"0 {-motor_link_offset} 0", "rpy": f"0 0 {-math.pi / 2}"},
+        }
+        if not robot_line
+        else {
+            "front": {"xyz": f"{motor_link_offset} 0 0", "rpy": "0 0 0"},
+        }
+    )
 
     robot = Element(
         "robot",
@@ -148,59 +168,45 @@ def build_random_tree(
     modules = [{"name": "base", "parent": None, "used_faces": set()}]
 
     for i in range(num_modules):
-        # Pick a valid parent (base or any module) that still has a free face
+        # Build list of candidate parents and their available faces
         candidate_parents = []
         for m in modules:
             if m["name"] == "base":
-                available_faces = [f for f in base_faces if f not in m["used_faces"]]
+                available_faces = [
+                    f for f in base_faces if f not in m["used_faces"]]
             else:
-                available_faces = [f for f in module_faces if f not in m["used_faces"]]
+                available_faces = [
+                    f for f in module_faces if f not in m["used_faces"]]
             if available_faces:
                 candidate_parents.append((m, available_faces))
         if not candidate_parents:
             break
 
-        parent = random.choice(possible_parents)
-        if parent["name"] == "base":
-            available_faces = [
-                f for f in base_faces if f not in parent["used_faces"]]
-        else:
-            available_faces = [
-                f for f in module_faces if f not in parent["used_faces"]]
-        if not available_faces:
-            continue
-
+        # Pick a parent and a face
+        parent, available_faces = random.choice(candidate_parents)
         face = random.choice(available_faces)
         parent["used_faces"].add(face)
 
         module_name = f"robot_{robot_idx}_module_{i}"
         modules.append(
-            {"name": module_name,
-                "parent": parent["name"], "used_faces": set()}
-        )
+            {"name": module_name, "parent": parent["name"], "used_faces": set()})
 
         # Create joint connecting parent and module
         if parent["name"] == "base":
             xyz = base_faces[face]["xyz"]
             rpy = base_faces[face]["rpy"]
+            parent_link = "base_link"
         else:
             xyz = module_faces[face]["xyz"]
             rpy = module_faces[face]["rpy"]
+            parent_link = f"{parent['name']}_motor_link"
 
         joint_name = f"joint_{parent['name']}_{module_name}"
         joint = SubElement(
             robot, "joint", {"name": joint_name, "type": "fixed"})
-
-        if parent["name"] == "base":
-            SubElement(joint, "parent", {"link": "base_link"})
-        else:
-            SubElement(joint, "parent", {
-                       "link": f"{parent['name']}_motor_link"})
-        # child link, always the connector link
+        SubElement(joint, "parent", {"link": parent_link})
         SubElement(joint, "child", {"link": f"{module_name}_connector_link"})
-        # position and orientation
         SubElement(joint, "origin", {"xyz": xyz, "rpy": rpy})
-        # instance of module
         SubElement(robot, "xacro:module", {"name": module_name})
 
     xml_str = minidom.parseString(tostring(robot, encoding="unicode")).toprettyxml(
@@ -212,7 +218,8 @@ def build_random_tree(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Genesis Modular Robot Simulation")
+    parser = argparse.ArgumentParser(
+        description="Genesis Modular Robot Simulation")
 
     parser.add_argument(
         "-r", "--robots",
