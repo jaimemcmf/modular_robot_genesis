@@ -6,8 +6,12 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 import genesis as gs
 import numpy as np
+import time
+import psutil
+import os
+import torch
 
-def init_genesis():
+def init_genesis(viewer: bool = False):
     scene = gs.Scene(
         viewer_options=gs.options.ViewerOptions(
             camera_pos=(0, -3.5, 2.5),
@@ -19,11 +23,10 @@ def init_genesis():
         sim_options=gs.options.SimOptions(
             dt=0.01,
         ),
-        show_viewer=False,
+        show_viewer=viewer,
         rigid_options=gs.options.RigidOptions(
             enable_collision=True,
             dt=0.01,
-            enable_adjacent_collision=True,
             enable_joint_limit=True,
             gravity=np.array([0.0, -9.81, 0.0]),
             constraint_solver=gs.constraint_solver.Newton,
@@ -141,3 +144,35 @@ def build_random_tree(
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(xml_str)
+        
+def get_cpu_mem_mb():
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024**2
+
+""" def get_gpu_mem_mb():
+    if not torch.cuda.is_available():
+        return 0.0
+    torch.cuda.synchronize()
+    return torch.cuda.max_memory_allocated() / 1024**2
+
+    # torch.cuda.reset_peak_memory_stats() """
+    
+import subprocess
+import os
+
+def get_gpu_mem_mb():
+    import subprocess
+    try:
+        out = subprocess.check_output(
+            [
+                "nvidia-smi",
+                "--query-gpu=memory.used",
+                "--format=csv,noheader,nounits",
+            ],
+            encoding="utf-8",
+        )
+        # If multiple GPUs, take the first one
+        return float(out.strip().split("\n")[0])
+    except Exception:
+        return 0.0
+

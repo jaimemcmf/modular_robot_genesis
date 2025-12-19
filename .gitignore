@@ -9,3 +9,4 @@ dist/
 *.urdf
 test.py
 random_robot.urdf.xacro
+make_graph_2000.py
